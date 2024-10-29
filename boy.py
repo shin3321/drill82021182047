@@ -7,12 +7,12 @@ from state_machine import *
 class Idle:
     @staticmethod
     def enter(boy, e):
-        if right_up(e) or left_down(e) or time_out(e)  :
+        if right_up(e) or left_down(e) or (time_out(e) and boy.face_dir ==1):
             boy.action = 3
             boy.frame = 0
             boy.face_dir = 1
 
-        elif left_up(e) or right_down(e) or start_event(e):
+        elif left_up(e) or right_down(e) or start_event(e)or (time_out(e) and boy.face_dir == -1):
             boy.action = 2
             boy.frame = 0
             boy.face_dir = -1
@@ -29,7 +29,7 @@ class Idle:
     @staticmethod
     def do(boy):
         boy.frame = (boy.frame + 1) %1
-        if get_time() - boy.start_time > 100:
+        if get_time() - boy.start_time > 5:
             #이벤트 발생
             boy.state_machine.add_event(('TIME_OUT', 0))
         pass
@@ -131,7 +131,7 @@ class AutoRun:
                 boy.action = 1
                 boy.dir = 1
                 boy.x = 0
-        elif get_time() - boy.auto_run_time > 5.0:
+        else:
             # 이벤트 발생
             boy.state_machine.add_event(('TIME_OUT', 0))
 
