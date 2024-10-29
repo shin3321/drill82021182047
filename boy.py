@@ -1,10 +1,12 @@
+from asyncio import Timeout
+
 from pico2d import *
 from state_machine import *
 
 class Idle:
     @staticmethod
     def enter(boy, e):
-        if right_up(e) or left_down(e):
+        if right_up(e) or left_down(e)  :
             boy.action = 3
             boy.frame = 0
             boy.face_dir = 1
@@ -26,7 +28,7 @@ class Idle:
     @staticmethod
     def do(boy):
         boy.frame = (boy.frame + 1) %1
-        if get_time() - boy.start_time > 1:
+        if get_time() - boy.start_time > 5:
             #이벤트 발생
             boy.state_machine.add_event(('TIME_OUT', 0))
         pass
@@ -82,18 +84,60 @@ class Run:
     @staticmethod
     def do(boy):
         boy.frame = (boy.frame + 1) % 8
-        boy.x += boy.dir * 2
+        boy.x += boy.dir * 5
         pass
 
     @staticmethod
     def draw(boy):
         boy.image.clip_draw(
             boy.frame * 100, boy.action * 100, 100, 100, boy.x , boy.y)
+        pass
 
-
+class AutoRun:
+    @staticmethod
+    def enter(boy, e):
+        boy.auto_run_time = get_time()
+        # 초기 설정
+        if boy.face_dir == 1:
+            boy.action = 1
+            boy.dir = 1
+        elif boy.face_dir == -1:
+            boy.action = 0
+            boy.dir = -1
 
         pass
 
+    @staticmethod
+    def exit(boy, e):
+        pass
+
+    @staticmethod
+    def do(boy):
+        # 자동 달리기 시간 체크
+        if get_time() - boy.auto_run_time < 5:
+            boy.frame = (boy.frame + 1) % 8
+            boy.x += boy.dir * 8
+
+            # x좌표가 양 끝에 도달하면 방향 전환
+            if boy.x >= 800:
+                boy.face_dir = -1
+                boy.action = 0
+                boy.dir = -1
+                boy.x = 800  # x 좌표를 최대값으로 고정
+            elif boy.x <= 0:
+                boy.face_dir = 1
+                boy.action = 1
+                boy.dir = 1
+                boy.x = 0  # x 좌표를 최소값으로 고정
+        else:
+            # 이벤트 발생
+            boy.state_machine.add_event(('TIME_OUT', 0))
+
+    @staticmethod
+    def draw(boy):
+        boy.image.clip_draw(
+            boy.frame * 100, boy.action * 100, 100, 100, boy.x, boy.y+25, 200, 200)
+        pass
 
 class Boy:
     def __init__(self):
@@ -102,14 +146,17 @@ class Boy:
         self.dir = 0
         self.action = 3
 
+
         self.image = load_image('animation_sheet.png')
         self.state_machine = StateMachine(self)   # 어떤 객체를 위한 상태 머신인지 알려 줄 필요가 있다
         self.state_machine.start(Idle)        # 객체를 생설한 것이 아니고 직접 클래스 이름을 사용
         self.state_machine.set_transitions(
             {
-                Idle: {right_down: Run, left_down: Run, left_up: Run, right_up: Run, time_out: Sleep},
-                Run :{right_down: Idle, left_down: Idle, right_up: Idle, left_up: Idle},
-                Sleep: {right_down: Run, left_down: Run, left_up: Run, right_up: Run, space_down: Idle}
+                Idle: {right_down: Run, left_down: Run, left_up: Run, right_up: Run, time_out: Sleep,
+                       A_down : AutoRun, A_up : AutoRun},
+                Run : {right_down: Idle, left_down: Idle, right_up: Idle, left_up: Idle},
+                Sleep: {right_down: Run, left_down: Run, left_up: Run, right_up: Run, space_down: Idle},
+                AutoRun: {right_down: Run, left_down: Run, left_up: Run, right_up: Run, Timeout: Idle}
             }
         )
 
