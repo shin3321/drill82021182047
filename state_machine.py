@@ -35,7 +35,6 @@ class StateMachine:
         self.event_que = [] #발생하는 이벤트를 담는 곳
         pass
 
-
     def set_transitions(self, transitions):
         self.transitions = transitions
         pass
